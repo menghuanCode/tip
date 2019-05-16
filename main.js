@@ -42,9 +42,6 @@
 
     Tip.prototype.init = function (config) {
 
-        if (this.wrapper && !config.multile) {
-            this.destroy()
-        }
 
         this.config = Object.create(_config)
 
@@ -70,6 +67,7 @@
         this.wrapper.id = 'ui-tip-wrapper-' + this.cid
         document.body.append(this.wrapper)  
 
+        tips.push(this.wrapper)
         this.wrapper.innerHTML = this.view()
         this.animation()
     }
@@ -97,11 +95,18 @@
             transform: 'translate(-50%, -50%)',
         })
 
-        this.t =  TweenMax.to(this.wrapper, 0.1, {
+        TweenMax.to(this.wrapper, 0.1, {
             opacity: 1,
             transform: 'translate(-50%, -50%)',
             onComplete: function () {
+
+                if (tips.length >= 2 && !that.config.multile) {
+                    let wrapper = tips.shift()
+                    wrapper.remove()
+                }
                 setTimeout(function () {
+
+
                     animationOut()
                     that.config.onComplete.call(that)
                     that.destroy()
