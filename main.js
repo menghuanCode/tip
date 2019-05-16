@@ -42,6 +42,9 @@
 
     Tip.prototype.init = function (config) {
 
+        if (this.wrapper && !this.config.multile) {
+            this.wrapper.remove()
+        }
 
         this.config = Object.create(_config)
 
@@ -92,30 +95,26 @@
         addCss(this.wrapper, {
             top: "50%",
             left: "50%",
-            transform: 'translate(-50%, -50%)',
+            transform: 'translate(-50%, -50%) scale(0)',
         })
 
-        TweenMax.to(this.wrapper, 0.1, {
+        TweenMax.to(this.wrapper, 0.2, {
             opacity: 1,
-            transform: 'translate(-50%, -50%)',
+            transform: 'translate(-50%, -50%) scale(1)',
             onComplete: function () {
-
-                if (tips.length >= 2 && !that.config.multile) {
-                    let wrapper = tips.shift()
-                    wrapper.remove()
-                }
-                setTimeout(function () {
-
-
-                    animationOut()
+                that.timer = setTimeout(function () {
+                    animationOut(that)
                     that.config.onComplete.call(that)
                     that.destroy()
                 }, that.config.duration)
             }
         })
 
-        function animationOut() {
-            
+        function animationOut(ts) {
+            TweenMax.to(ts.wrapper, 0.1, {
+                opacity: 0,
+                transform: 'translate(-50%, -200%)',
+            })            
         }
     }
 

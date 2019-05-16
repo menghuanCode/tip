@@ -18,12 +18,13 @@
   z-index: 1200;
   min-width: 100px;
   background-color: #000;
-  filter: alpha(opacity=60);
-  background-color: rgba(0, 0, 0, 0.6);
+  filter: alpha(opacity=80);
+  background-color: rgba(0, 0, 0, 0.8);
   color: #fff;
   border: none;
   text-align: center;
-  outline: none; }
+  outline: none;
+  box-shadow: 0 0 10px black; }
   .ui-tip .ui-tip-content {
     font-size: 13px;
     padding: 12px 25px;
