@@ -1,0 +1,36 @@
+*{
+	padding: 0;
+	margin: 0;
+}
+
+.ui-tip-wrapper,
+.ui-tip-shade {
+  position: fixed;
+  opacity: 0;
+}
+
+.ui-tip-shade {
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  // background: rgba(0, 0, 0, 0.6);
+  z-index: 1000;
+}
+
+.ui-tip {
+	z-index: 1200;
+  min-width: 100px;
+  background-color: #000;
+  filter: alpha(opacity=60);
+  background-color: rgba(0,0,0,.6);
+  color: #fff;
+  border: none;
+  text-align: center;
+  outline: none;
+  .ui-tip-content {
+  	font-size: 13px;
+		padding: 12px 25px;
+  	text-align: center;
+  }
+}

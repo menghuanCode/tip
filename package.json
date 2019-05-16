@@ -1,0 +1,13 @@
+{
+  "name": "datePricker",
+  "version": "0.2.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "sass": "sass layout.scss:layout.css --watch"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC"
+}
