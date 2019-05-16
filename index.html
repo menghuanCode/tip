@@ -26,11 +26,14 @@
         let btn = document.querySelector('#btn')
 
         btn.onclick = function () {
-            tip('你好啊')
+            tip({
+                content: '你好啊',
+                multile: true
+            })
         }
 
         tip(123)
-        tip(3456)
+        // tip(3456)
 
 
 

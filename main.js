@@ -44,6 +44,7 @@
         this.timer = undefined
         this.wrapper = undefined
         this.state = STATE_INITAL
+        this.isWrapperRemove = false
         this.init(config)
         return this
     }
@@ -60,8 +61,9 @@
             throw new Error('请输入字符串或者对象')
         }
 
-        // 如果不是初始化，就还原
+        // 如果不是初始化，就销毁
         if (this.state === STATE_START) {
+            this.isWrapperRemove =  !config.multile
             this.destroy(config) 
         }
 
@@ -128,6 +130,7 @@
             },
             onReverseComplete: function () {
                 that.config.onComplete.call(that)
+                that.isWrapperRemove = true
                 that.destroy()
             }
         })
@@ -139,6 +142,7 @@
             return this
         }
 
+
         this.state = STATE_INITAL
 
         // 如果有动画操作
@@ -147,8 +151,8 @@
             this.tween = undefined
         }
 
-        // 如果有 wrapper
-        if (this.wrapper) {
+        console.log(this.isWrapperRemove)
+        if (this.isWrapperRemove) {
             this.wrapper.remove()
             this.wrapper = undefined
         }
