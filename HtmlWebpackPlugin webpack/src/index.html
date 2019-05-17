@@ -1,0 +1,131 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport"
+          content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>Tip</title>
+    <style type="text/css">
+        button {
+            height: 50px;
+            background: rgba(0, 0, 0, 0.8);
+            color: #fff;
+            outline: none;
+            border: none;
+            margin: 20px 0 0 15px;
+            padding: 10px 15px;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+
+    <div>
+        <button id="btnTop">向上边离开</button>
+        <button id="btnRight">向右边离开</button>
+        <button id="btnBottom">向下边离开</button>
+        <button id="btnLeft">向左边离开</button>
+        <button id="btnCenter">中间离开</button>
+    </div>
+
+    <div>
+        <button id="btnLine">单行</button>
+        <button id="btnMultile">多行</button>
+        <button id="btnMultileAndMultile">多行+多行</button>
+        <button id="btnMultileAndLine">多行+单行</button>
+    </div>
+
+    <div>
+        <button id="btnLoading1">Loading1</button>
+        <button id="btnLoading2">Loading2</button>
+        <button id="btnLoading3">Loading3</button>
+    </div>
+    <script>
+
+
+        // 第一行
+        btnTop.onclick = function () {
+            tip({
+                content: '向上边离开',
+                direction: 'top'
+            })
+        }
+        btnRight.onclick = function () {
+            tip({
+                content: '向右边离开',
+                direction: 'right'
+            })
+        }
+        btnBottom.onclick = function () {
+            tip({
+                content: '向下边离开',
+                direction: 'bottom'
+            })
+        }
+        btnLeft.onclick = function () {
+            tip({
+                content: '向左边离开',
+                direction: 'left'
+            })
+        }
+        btnCenter.onclick = function () {
+            tip({
+                content: '中间离开',
+                direction: 'center'
+            })
+        }
+        // 第二行
+        btnLine.onclick = function () {
+            tip({
+                content: '默认是单行'
+            })
+        }
+        btnMultile.onclick = function () {
+            tip({
+                content: '俺是多行',
+                multile: true
+            })
+        }
+        btnMultileAndMultile.onclick = function () {
+            tip({
+                content: '我是多行1',
+                multile: true,
+                onComplete: function () {
+                    tip({
+                        content: '我是多行2',
+                        multile: true
+                    })
+                }
+            })
+        }
+        btnMultileAndLine.onclick = function () {
+            tip({
+                content: '我是多行1',
+                multile: true,
+                onComplete: function () {
+                    tip({
+                        content: '我是单行2',
+                    })
+                }
+            })
+        }
+
+        // 第三行
+        btnLoading1.onclick = function () {
+            var loading = tip('<img src="./svg-loaders/puff.svg" width="60" alt="">')
+            // 模拟任务执行完毕
+            setTimeout(function () {
+                loading.close()
+            }, 3000)
+        }
+        btnLoading2.onclick = function () {
+            tip('<img src="./svg-loaders/puff.svg" width="60" alt="">')
+        }
+        btnLoading3.onclick = function () {
+            tip('<img src="./svg-loaders/bars.svg" width="60" alt="">')
+        }
+
+    </script>
+</body>
+</html>
