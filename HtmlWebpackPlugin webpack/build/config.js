@@ -74,7 +74,7 @@ module.exports = {
     },
     resolve: {
         alias: {
-            zepto$: resolve('src/libs/zepto/dist/zepto.min.js')
+            // zepto$: resolve('src/libs/zepto/dist/zepto.min.js'),
         }
     },
     plugins: [
@@ -86,10 +86,10 @@ module.exports = {
             chunkFilename: "[id].css",
         }),
         new webpack.ProvidePlugin({
-            $: 'zepto'
-        })
-        // new CopyPlugin([
-        //     { from: 'src/libs', to: 'libs' },
-        // ])
+            $: 'jquery'
+        }),
+        new CopyPlugin([
+            { from: 'src/svg-loaders', to: 'svg-loaders' },
+        ])
     ]
 }

@@ -48,7 +48,8 @@
         btnTop.onclick = function () {
             tip({
                 content: '向上边离开',
-                direction: 'top'
+                direction: 'top',
+                duration: 10000,
             })
         }
         btnRight.onclick = function () {
@@ -115,9 +116,9 @@
         btnLoading1.onclick = function () {
             var loading = tip('<img src="./svg-loaders/puff.svg" width="60" alt="">')
             // 模拟任务执行完毕
-            setTimeout(function () {
-                loading.close()
-            }, 3000)
+            // setTimeout(function () {
+            //     loading.close()
+            // }, 3000)
         }
         btnLoading2.onclick = function () {
             tip('<img src="./svg-loaders/puff.svg" width="60" alt="">')
