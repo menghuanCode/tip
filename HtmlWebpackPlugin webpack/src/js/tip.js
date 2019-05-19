@@ -4,6 +4,8 @@ import { TweenLite } from 'gsap/TweenLite';
 import CSSPlugin from 'gsap/CSSPlugin'
 const _activate = CSSPlugin;
 
+import Timeline from './Timeline'
+
 // 初始化状态
 const STATE_INITAL = 0
 // 开始状态
@@ -150,27 +152,40 @@ Tip.prototype.render = function () {
         shadeEl.style.display = tip.config.shade ? "block" : "none"
 
 
+        // 位置后的方法做的 amatrix 动画，还没完成
         matrixAnimation(tipEl, {
             opacity: 1,
             transform: `translate(${direction.out})`,
         })
+        
+        // 
+        // {opacity: "0", transform: "matrix(1, 0, 0, 1, -57.5, -20.5)"}
+        // {opacity: 1, transform: "matrix(1,0,0,1,-57.5,-20.5)"}
+        // 
+        // matrix(1, 0, 0, 1, -57.5, 20.5)
+        // matrix(1, 0, 0, 1, -57.5, -20.5)
 
-        tip.tween = TweenLite.to(tipEl, 0.5, {
-            opacity: 1,
-            transform: `translate(${direction.out})`,
-            onComplete: function () {
-                if (!tip.config.isImage) {
-                    tip.timer = setTimeout(function () {
-                        tip.tween.reverse()
-                    }, tip.config.duration)
-                }
-            },
-            onReverseComplete: function () {
-                tip.config.onComplete.call(tip)
-                tip.isWrapperRemove = true
-                tip.destroy()
-            }
-        })
+        // tip.tween = TweenLite.to(tipEl, 0.5, {
+        //     opacity: 1,
+        //     transform: `translate(${direction.out})`,
+        //     onComplete: function () {
+
+
+        //         console.log(getComputedStyle(tipEl).transform)
+
+        //         if (!tip.config.isImage) {
+        //             tip.timer = setTimeout(function () {
+        //                 tip.tween.reverse()
+        //             }, tip.config.duration)
+        //         }
+        //     },
+        //     onReverseComplete: function () {
+        //         console.log(getComputedStyle(tipEl).transform)
+        //         tip.config.onComplete.call(tip)
+        //         tip.isWrapperRemove = true
+        //         tip.destroy()
+        //     }
+        // })
     }
 
     tip.close = function () {
@@ -229,86 +244,143 @@ function addCss(el, propertys) {
     }
 }
 
-
-function matrixAnimation(el, toObj) {
+/**
+ * 为之后做的 matrix 动画
+ * @param  {[type]} el    原数
+ * @param  {[type]} toStyle 准备达到的样式
+ * @return {[type]}       [description]
+ */
+function matrixAnimation(el, toStyle) {
     let a, b, c, d, e, f
-    let x, y, s
-    let curObj = Object.create(null)
-    let width = getPropertyValue(el, "width")
-    let height = getPropertyValue(el, "height")
 
-    for(let key in toObj) {
-       curObj[key] = getPropertyValue(el, key)
+    // let x, y, s
+    
+    let fromStyle = Object.create(null)
+    let elWidth = getPropertyValue(el, "width")
+    let elHeight = getPropertyValue(el, "height")
+
+    // 真正能执行动画的属性
+    let canAnimateMap = Object.create(null)
+    let matrix = [1, 0, 0, 1, 0, 0]
+
+    for(let key in toStyle) {
+        if (isPropertyEqual(el, key, toStyle[key])) {
+            fromStyle[key] = el.style[key]
+            continue
+        }
+
+        fromStyle[key] = getPropertyValue(el, key)
+        canAnimateMap[key] =  true
     }
 
-    // 如果有这个属性的话
-    if (curObj["transform"]) {
+    // console.log(canAnimateMap)
+
+    // 特殊的元素属性，如果有这个属性的话
+    if (canAnimateMap["transform"]) {
 
         let reg = /[^(?=)]+/g
-        let matrix
-        if (curObj["transform"] === "none") {
-            matrix = [1, 0, 0, 1, 0, 0]
+
+        if (fromStyle["transform"] === "none") {
+            fromStyle.transform = `matrix(${String(matrix)})`
         } else {
-            matrix = (curObj["transform"].match(reg)[1]).split(',')
-            // [a, b, c, d, e, f] = matrix.map(item => item - 0)
-
-            console.log(matrix)
-            // console.log([a, b, c, d, e, f])
+            matrix = (fromStyle["transform"].match(reg)[1]).split(',');
+            matrix = matrix.map(Number)
         }
 
-        let toTransformArray = toObj["transform"].match(reg)
-        let toTransformMap = Object.create(null)
 
-        for(let i = 0; i < toTransformArray.length; i++) {
-            let key = toTransformArray[i]
+        let match = toStyle["transform"].match(reg)
+        let transformStyle = Object.create(null)
+
+        for(let i = 0; i < match.length; i++) {
+            let key = match[i]
             if (i % 2 === 1) { continue }
-            toTransformMap[key] = toTransformArray[i + 1]
+            transformStyle[key] = match[i + 1]
         }
 
-        console.log(toTransformMap)
-
-        console.log([a, b, c, d, e, f])
+        // console.log([a, b, c, d, e, f])
         // 如果有位移
-        if (toTransformMap["translate"]) {
-            let value = toTransformMap["translate"].split(/,\s*/)
+        if (transformStyle["translate"]) {
+            let value = transformStyle["translate"].split(/,\s*/)
             if (value.length === 1) {
                 value.push(value[0])
             }
 
-            e += isRate(value[0]) ? rateToInt(width, value[0]) : parseFloat(value[0])
-            f += isRate(value[1]) ? rateToInt(height, value[1]) : parseFloat(value[1])
+            console.log(value)
+            matrix[4] = e = isRate(value[0]) ? rateToInt(elWidth, value[0]) : parseFloat(value[0])
+            matrix[5] = f = isRate(value[1]) ? rateToInt(elHeight, value[1]) : parseFloat(value[1])
         }
 
-        console.log([a, b, c, d, e, f])
+        toStyle["transform"] = `matrix(${String(matrix)})`
+        // console.log(fromStyle["transform"], matrix, toStyle["transform"])
+    }
+
+
+    // animation()
+
+    function animation() {
+
+        let timeline = new Timeline()
+        let nextStyle = Object.create(null)
+
+        // 第一次初始化循环
+        for (let key in canAnimateMap) {
+            nextStyle[key] = parseFloat(fromStyle[key])
+        }
+
+        timeline.onEnterFrame = function () {
+
+            for(let key in canAnimateMap) {
+                nextStyle[key] += lerpDistance(toStyle[key], nextStyle[key], 0.9)
+                // let value = getPropertyValue(el, key)
+            }
+
+            console.log(nextStyle)
+
+            console.log(1)
+        }
+
+        timeline.start(1000)
+
+        // 啊，要是一步执行完成就好了
+        addCss(el, toStyle)
+
 
     }
 
-    console.log(curObj)
+    console.log(matrix)
+    console.log(fromStyle)
+    console.log(toStyle)
 
-    // return curMatrix
     
     function getPropertyValue(el, propertyName) {
         return getComputedStyle(el, null).getPropertyValue(propertyName)
     }
 
+    function isPropertyEqual(el, propertyName, property) {
+        return  getPropertyValue(el, propertyName) === property || (el.style[propertyName] === property)
+    }
+
+
     // 是否是百分比
     function isRate(rate) {
-        let reg = /^\.?(?:\d+)%$/
+        let reg = /%$/
         return reg.test(rate)
     }
+
 
     function rateToInt(base, rate) {
         if (isNaN(parseFloat(base)) || isNaN(parseFloat(rate))) {
             throw new Error("请输入合适的数值或数值字符串")
         }
 
-        console.log(base, rate, (parseFloat(base) * parseFloat(rate))/100)
         return (parseFloat(base) * parseFloat(rate))/100
     }
 
+    function lerpDistance(aim, cur, ratio) {
+        var delta = cur - aim
+        return aim + delta * ratio
+    }
 }
-
-
 
 /**
  *  类型检测
@@ -320,13 +392,13 @@ function isTypeof(obj) {
 }
 
 
-window.requestAnimationFrame = (function (callback) {
-    return requestAnimationFrame || setTimeout(callback, callback.interval || DEFAULT_INTERVAL)
-})()
+// window.requestAnimationFrame = (function (callback) {
+//     return requestAnimationFrame || setTimeout(callback, callback.interval || DEFAULT_INTERVAL)
+// })()
 
-window.cancelAnimationFrame = (function (id) {
-    return cancelAnimationFrame || clearTimeout(id)
-})()
+// window.cancelAnimationFrame = (function (id) {
+//     return cancelAnimationFrame || clearTimeout(id)
+// })()
 
 
 

@@ -6,7 +6,7 @@
         "node": true
     },
     "rules": {
-        "consistent-return": 2,
+        "consistent-return": 0,
         "indent"           : [1, 4],
         "no-else-return"   : 1,
         "semi"             : [0, "always"],
