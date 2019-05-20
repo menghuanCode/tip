@@ -1,10 +1,12 @@
 'use strict';
 
+/**
+ * gsap 私有 hack，一定不能删，不然运行不了,你必须确保你在足够了解的情况下或者不需要才能删除 
+ */
 import { TweenLite } from 'gsap/TweenLite';
 import CSSPlugin from 'gsap/CSSPlugin'
 const _activate = CSSPlugin;
-
-import Timeline from './Timeline'
+/*************************************************************************************/
 
 // 初始化状态
 const STATE_INITAL = 0
@@ -16,7 +18,7 @@ let _config = {
     content: '',
     duration: 1000,
     direction: 'center',
-    shade: true,
+    shade: false,
     multile: false,
     isImage: false,
     onComplete: function () {}
@@ -112,8 +114,8 @@ Tip.prototype.render = function () {
 
         let directionObj = {
             top: {
-                in: "-50%, -50%",
-                out: "-50%, 50%"
+                in: "-50%, -100%",
+                out: "-50%, -50%"
             },
             right: {
                 in: "50%, -50%",
@@ -153,24 +155,28 @@ Tip.prototype.render = function () {
 
 
         // 位置后的方法做的 amatrix 动画，还没完成
-        matrixAnimation(tipEl, {
+        tip.tween = matrixAnimation(tipEl, 0.5, {
             opacity: 1,
             transform: `translate(${direction.out})`,
+            onComplete: function () {
+                if (!tip.config.isImage) {
+                    tip.timer = setTimeout(function () {
+                        tip.tween.reverse()
+                    }, tip.config.duration)
+                }
+            },
+            onReverseComplete: function () {
+                tip.config.onComplete.call(tip)
+                tip.isWrapperRemove = true
+                tip.destroy()
+            }
         })
         
-        // 
-        // {opacity: "0", transform: "matrix(1, 0, 0, 1, -57.5, -20.5)"}
-        // {opacity: 1, transform: "matrix(1,0,0,1,-57.5,-20.5)"}
-        // 
-        // matrix(1, 0, 0, 1, -57.5, 20.5)
-        // matrix(1, 0, 0, 1, -57.5, -20.5)
 
         // tip.tween = TweenLite.to(tipEl, 0.5, {
         //     opacity: 1,
         //     transform: `translate(${direction.out})`,
         //     onComplete: function () {
-
-
         //         console.log(getComputedStyle(tipEl).transform)
 
         //         if (!tip.config.isImage) {
@@ -246,110 +252,176 @@ function addCss(el, propertys) {
 
 /**
  * 为之后做的 matrix 动画
- * @param  {[type]} el    原数
+ * @param  {[type]} el    元素
+ * @param  {[type]} duration 持续时间
  * @param  {[type]} toStyle 准备达到的样式
  * @return {[type]}       [description]
  */
-function matrixAnimation(el, toStyle) {
-    let a, b, c, d, e, f
+function matrixAnimation(el, duration, config) {
 
-    // let x, y, s
-    
-    let fromStyle = Object.create(null)
-    let elWidth = getPropertyValue(el, "width")
-    let elHeight = getPropertyValue(el, "height")
+    console.log(getPropertyValue(el, "transform"))
 
-    // 真正能执行动画的属性
-    let canAnimateMap = Object.create(null)
-    let matrix = [1, 0, 0, 1, 0, 0]
+    let _ = {
+        el,
+        duration: (duration * 1000) || 1000,
+        interval: 16,
+        fromStyle: Object.create(null),
+        fromMatrix: [1, 0, 0, 1, 0, 0],
+        toStyle: Object.assign({}, config),
+        toMatrix: [1, 0, 0, 1, 0, 0],
+        animation,
+        timer: null,
+        hasTransform: false,
+        canAnimateMap: Object.create(null),
+        reverse: function () {
+            console.log("reverse");
 
-    for(let key in toStyle) {
-        if (isPropertyEqual(el, key, toStyle[key])) {
-            fromStyle[key] = el.style[key]
+            [this.fromStyle, this.toStyle] = [this.toStyle, this.fromStyle];
+            [this.fromMatrix, this.toMatrix] = [this.toMatrix, this.fromMatrix];
+
+
+            console.log(this.fromStyle, this.toStyle)
+            console.log(this.fromMatrix, this.toStyle)
+
+            this.onComplete = this.onReverseComplete
+            this.animation()
+        }
+    }
+
+
+    let event = ["reverse"]
+    let on = ["onComplete", "onReverseComplete"]
+
+    // 添加 暴露事件接口函数
+    for (let key of on) {
+        _[key] = function () {}
+        _[key] = isFunction(config[key]) && config[key]
+
+        // 删除不是 style 的属性
+        delete _.toStyle[key]
+    }
+
+    for(let key in _.toStyle) {
+        if (isPropertyEqual(el, key, _.toStyle[key])) {
+            _.fromStyle[key] = _.toStyle[key]
             continue
         }
 
-        fromStyle[key] = getPropertyValue(el, key)
-        canAnimateMap[key] =  true
+        _.fromStyle[key] = getPropertyValue(el, key)
+        _.canAnimateMap[key] =  true
     }
+
 
     // console.log(canAnimateMap)
 
     // 特殊的元素属性，如果有这个属性的话
-    if (canAnimateMap["transform"]) {
+    if (_.canAnimateMap["transform"]) {
+        // 不可遍历对象
+        _.hasTransform = true
+        Object.defineProperty(_.canAnimateMap, "transform", { enumerable: false })
+        _.fromMatrix = getMartix(el, _.fromStyle["transform"])
+        _.toMatrix = getMartix(el, _.toStyle["transform"])
+        _.toStyle["transform"] = `matrix(${String(_.toMatrix)})`
+    }
 
+
+    _.animation()
+
+    return _
+
+    function animation() {
+
+        let nextStyle = Object.assign({}, this.fromStyle)
+        let nextMatrix = this.fromMatrix.slice()
+        let count = parseInt(this.duration/this.interval)
+
+        let index = 0
+
+        this.timer = setInterval(() => {
+            // 如果执行完毕
+            if (index === count) {
+                clearInterval(this.timer)
+                this.onComplete.call(this)
+                return
+            }
+
+            index++
+
+            for (let key in this.canAnimateMap) {
+                let speed = (this.toStyle[key] - this.fromStyle[key]) / count
+                nextStyle[key] = parseFloat(nextStyle[key]) + speed
+            }
+
+            // 如有 transform
+            if (this.hasTransform) {
+                for(let i = 0; i < nextMatrix.length; i++) {
+                    if (nextMatrix[i] !== this.toMatrix[i]) {
+                        let speed = (this.toMatrix[i] - this.fromMatrix[i]) / count
+                        nextMatrix[i] = parseFloat(nextMatrix[i]) + speed
+                    }
+                }
+            }
+
+            nextStyle["transform"] = `matrix(${String(nextMatrix)})`
+            addCss(el, nextStyle)
+
+        }, this.interval)
+    }
+
+    /**
+     * 获取 Martix
+     * @param  {[type]} transform matrix 字符串
+     * @return {[type]}           返回一个 matrix 矩阵
+     */
+    function getMartix(el, transform) {
         let reg = /[^(?=)]+/g
+        let isMatrix = /matrix/.test(transform)
+        let matrix = [1, 0, 0, 1, 0, 0]
 
-        if (fromStyle["transform"] === "none") {
-            fromStyle.transform = `matrix(${String(matrix)})`
-        } else {
-            matrix = (fromStyle["transform"].match(reg)[1]).split(',');
-            matrix = matrix.map(Number)
+        // 如果是 "none"，就设为默认值
+        if (transform === "none") {
+            return matrix
+        } 
+
+        // 如果不是 matrix 字符串, 直接转换
+        if (!isMatrix) {
+            return transformToMartix(el, transform)
         }
 
+        matrix = (transform.match(reg)[1]).split(',');
+        matrix = matrix.map(Number)
 
-        let match = toStyle["transform"].match(reg)
-        let transformStyle = Object.create(null)
+        return matrix
+    }
+
+    function transformToMartix(el, transform) {
+        let reg = /[^(?=)]+/g
+        let match = transform.match(reg)
+        let matrix = [1, 0, 0, 1, 0, 0] 
+        let css = Object.create(null)
+        let baseWidth = getPropertyValue(el, "width")
+        let baseHeight = getPropertyValue(el, "height")
 
         for(let i = 0; i < match.length; i++) {
-            let key = match[i]
             if (i % 2 === 1) { continue }
-            transformStyle[key] = match[i + 1]
+            let key = match[i]
+            css[key] = match[i + 1]
         }
 
-        // console.log([a, b, c, d, e, f])
-        // 如果有位移
-        if (transformStyle["translate"]) {
-            let value = transformStyle["translate"].split(/,\s*/)
+        // 如果有 translate 属性
+        if (css["translate"]) {
+            let value = css["translate"].split(/,\s*/)
             if (value.length === 1) {
                 value.push(value[0])
             }
 
-            console.log(value)
-            matrix[4] = e = isRate(value[0]) ? rateToInt(elWidth, value[0]) : parseFloat(value[0])
-            matrix[5] = f = isRate(value[1]) ? rateToInt(elHeight, value[1]) : parseFloat(value[1])
+
+            matrix[4] = isRate(value[0]) ? rateToInt(baseWidth, value[0]) : parseFloat(value[0])
+            matrix[5] = isRate(value[1]) ? rateToInt(baseHeight, value[1]) : parseFloat(value[1])
         }
 
-        toStyle["transform"] = `matrix(${String(matrix)})`
-        // console.log(fromStyle["transform"], matrix, toStyle["transform"])
+        return matrix
     }
-
-
-    // animation()
-
-    function animation() {
-
-        let timeline = new Timeline()
-        let nextStyle = Object.create(null)
-
-        // 第一次初始化循环
-        for (let key in canAnimateMap) {
-            nextStyle[key] = parseFloat(fromStyle[key])
-        }
-
-        timeline.onEnterFrame = function () {
-
-            for(let key in canAnimateMap) {
-                nextStyle[key] += lerpDistance(toStyle[key], nextStyle[key], 0.9)
-                // let value = getPropertyValue(el, key)
-            }
-
-            console.log(nextStyle)
-
-            console.log(1)
-        }
-
-        timeline.start(1000)
-
-        // 啊，要是一步执行完成就好了
-        addCss(el, toStyle)
-
-
-    }
-
-    console.log(matrix)
-    console.log(fromStyle)
-    console.log(toStyle)
 
     
     function getPropertyValue(el, propertyName) {
@@ -367,6 +439,11 @@ function matrixAnimation(el, toStyle) {
         return reg.test(rate)
     }
 
+    // 判断是否是函数
+    function isFunction(func) {
+        return typeof func === "function"
+    }
+
 
     function rateToInt(base, rate) {
         if (isNaN(parseFloat(base)) || isNaN(parseFloat(rate))) {
@@ -381,6 +458,8 @@ function matrixAnimation(el, toStyle) {
         return aim + delta * ratio
     }
 }
+
+
 
 /**
  *  类型检测
