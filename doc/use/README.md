@@ -20,7 +20,7 @@ setTimeout(function () {
 ```js
 tip({
     content: '你好啊',         // 内容
-    duration: 3s              // 持续时间
+    duration: 3000              // 持续时间
     direction： 'center'      // 动画进来时的方向
     shade:  true              // 是否显示遮罩
 })
