@@ -1,13 +1,5 @@
 'use strict';
 
-/**
- * gsap 私有 hack，一定不能删，不然运行不了,你必须确保你在足够了解的情况下或者不需要才能删除 
- */
-import { TweenLite } from 'gsap/TweenLite';
-import CSSPlugin from 'gsap/CSSPlugin'
-const _activate = CSSPlugin;
-/*************************************************************************************/
-
 // 初始化状态
 const STATE_INITAL = 0
 // 开始状态
@@ -18,7 +10,7 @@ let _config = {
     content: '',
     duration: 1000,
     direction: 'center',
-    shade: false,
+    shade: true,
     multile: false,
     isImage: false,
     onComplete: function () {}
@@ -65,20 +57,6 @@ Tip.prototype.init = function (config) {
         throw new Error('请输入字符串或者对象')
     }
 
-    // 如果不是初始化，只有一种情况：上一次tip没有执行完又重新显示tip。
-    // 在判断是否是多行。
-    // console.log(this.state !== STATE_INITAL, !config.multile)
-    if (this.state !== STATE_INITAL && !config.multile) {
-
-        // 如果上一次不是多行，那就终止
-        if (preTip && !preTip.multile) {
-            preTip.wrapper.remove()
-            preTip.tween.kill()
-            clearTimeout(preTip.timer)
-            preTip = null
-        }
-
-    }
     this.state = STATE_START
 
     this.config = Object.create(_config)
@@ -87,15 +65,12 @@ Tip.prototype.init = function (config) {
     this.cid = `tip_` + +new Date()
     this.index++
 
-    
     return this.render()
 }
 
 Tip.prototype.render = function () {
 
-    if (this.state !== STATE_START) {
-        return this
-    }
+    MultileRender(this, preTip)
 
     let that = this
 
@@ -109,6 +84,20 @@ Tip.prototype.render = function () {
     preTip = tip
     animation(tip)
     queue.push(tip)
+
+    function MultileRender(tip, preTip) {
+        // 如果不是初始化，只有一种情况：上一次tip没有执行完又重新显示tip。
+        // 在判断是否是多行。
+        if (!tip.config.multile) {
+            // 如果上一次不是多行，那就终止
+            if (preTip && !preTip.multile) {
+                preTip.tween.kill()
+                clearTimeout(preTip.timer)
+                preTip.destroy()
+                preTip = null
+            }
+        }
+    }
     
     function animation(tip) {
 
@@ -171,27 +160,6 @@ Tip.prototype.render = function () {
                 tip.destroy()
             }
         })
-        
-
-        // tip.tween = TweenLite.to(tipEl, 0.5, {
-        //     opacity: 1,
-        //     transform: `translate(${direction.out})`,
-        //     onComplete: function () {
-        //         console.log(getComputedStyle(tipEl).transform)
-
-        //         if (!tip.config.isImage) {
-        //             tip.timer = setTimeout(function () {
-        //                 tip.tween.reverse()
-        //             }, tip.config.duration)
-        //         }
-        //     },
-        //     onReverseComplete: function () {
-        //         console.log(getComputedStyle(tipEl).transform)
-        //         tip.config.onComplete.call(tip)
-        //         tip.isWrapperRemove = true
-        //         tip.destroy()
-        //     }
-        // })
     }
 
     tip.close = function () {
@@ -259,8 +227,6 @@ function addCss(el, propertys) {
  */
 function matrixAnimation(el, duration, config) {
 
-    console.log(getPropertyValue(el, "transform"))
-
     let _ = {
         el,
         duration: (duration * 1000) || 1000,
@@ -274,17 +240,14 @@ function matrixAnimation(el, duration, config) {
         hasTransform: false,
         canAnimateMap: Object.create(null),
         reverse: function () {
-            console.log("reverse");
-
             [this.fromStyle, this.toStyle] = [this.toStyle, this.fromStyle];
             [this.fromMatrix, this.toMatrix] = [this.toMatrix, this.fromMatrix];
 
-
-            console.log(this.fromStyle, this.toStyle)
-            console.log(this.fromMatrix, this.toStyle)
-
             this.onComplete = this.onReverseComplete
             this.animation()
+        },
+        kill: function () {
+            clearInterval(this.timer)
         }
     }
 
@@ -311,9 +274,6 @@ function matrixAnimation(el, duration, config) {
         _.canAnimateMap[key] =  true
     }
 
-
-    // console.log(canAnimateMap)
-
     // 特殊的元素属性，如果有这个属性的话
     if (_.canAnimateMap["transform"]) {
         // 不可遍历对象
@@ -331,16 +291,19 @@ function matrixAnimation(el, duration, config) {
 
     function animation() {
 
+        let that = this
+
         let nextStyle = Object.assign({}, this.fromStyle)
         let nextMatrix = this.fromMatrix.slice()
         let count = parseInt(this.duration/this.interval)
 
         let index = 0
 
-        this.timer = setInterval(() => {
+        this.onFrame = () => {
             // 如果执行完毕
             if (index === count) {
-                clearInterval(this.timer)
+                addCss(el, _.toStyle)
+                setTimeout(function () { clearTimeout(that.timer) }, 0)
                 this.onComplete.call(this)
                 return
             }
@@ -362,10 +325,25 @@ function matrixAnimation(el, duration, config) {
                 }
             }
 
-            nextStyle["transform"] = `matrix(${String(nextMatrix)})`
-            addCss(el, nextStyle)
+            if (_.hasTransform) {
+                nextStyle["transform"] = `matrix(${String(nextMatrix)})`   
+            }
 
-        }, this.interval)
+            addCss(el, nextStyle)
+        }
+    
+
+        let f = () => {
+            this.onFrame()    
+            this.timer = setTimeout(f, this.interval)
+        }
+
+        this.timer = setTimeout(f, this.interval)
+
+
+
+
+
     }
 
     /**
@@ -429,6 +407,7 @@ function matrixAnimation(el, duration, config) {
     }
 
     function isPropertyEqual(el, propertyName, property) {
+        // console.log(el, propertyName, )
         return  getPropertyValue(el, propertyName) === property || (el.style[propertyName] === property)
     }
 
@@ -459,8 +438,6 @@ function matrixAnimation(el, duration, config) {
     }
 }
 
-
-
 /**
  *  类型检测
  * @param  {[type]}  obj [description]
@@ -469,16 +446,5 @@ function matrixAnimation(el, duration, config) {
 function isTypeof(obj) {
     return (Object.prototype.toString.call(obj)).slice(8, -1).toLowerCase()
 }
-
-
-// window.requestAnimationFrame = (function (callback) {
-//     return requestAnimationFrame || setTimeout(callback, callback.interval || DEFAULT_INTERVAL)
-// })()
-
-// window.cancelAnimationFrame = (function (id) {
-//     return cancelAnimationFrame || clearTimeout(id)
-// })()
-
-
 
 window.tip = createTip
