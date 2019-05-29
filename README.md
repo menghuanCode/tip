@@ -10,7 +10,7 @@
 
 - 下载地址 https://github.com/menghuanCode/tip/releases
 - `npm i zh-tip`
-- CDN http://unpkg.com/zh-tip/release/layout.js
+- CDN http://unpkg.com/zh-tip/example/js/layout.js
 
 ## 快速使用
 
