@@ -9,7 +9,9 @@
 
 ## 安装下载
 
-- [下载地址](https://github.com/menghuanCode/tip/releases)
+- 下载地址 https://github.com/menghuanCode/tip/releases
+- `npm i zh-tip`
+- CDN http://unpkg.com/zh-tip/release/bundle.js
 
 ## 快速使用
 
