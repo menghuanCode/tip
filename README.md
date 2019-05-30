@@ -1,6 +1,6 @@
 # tip 信息提示
 
-简单直接、小巧的的信息提示
+简单直接、小巧的的信息提示 https://menghuancode.github.io/
 
 ## 简介
 
