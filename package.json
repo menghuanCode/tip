@@ -18,7 +18,7 @@
     "css-loader": "^2.1.1",
     "cssnano": "^4.1.10",
     "eslint": "^5.15.1",
-    "gsap": "^2.1.2",
+    "gsap": "^3.6.0",
     "imagemin": "^6.1.0",
     "imagemin-gifsicle": "^6.0.1",
     "imagemin-mozjpeg": "^8.0.0",
